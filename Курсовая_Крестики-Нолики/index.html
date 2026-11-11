@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Крестики-Нолики против компьютера</title>
+<style>
+/* ===== Новый дизайн: тёмная тема с сине-фиолетовым акцентом ===== */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #1a1033 0%, #241946 40%, #31246b 100%);
+  background-attachment: fixed;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  color: #e8e6f0;
+}
+.wrap { max-width: 940px; margin: 0 auto; padding: 12px; }
+
+/* Шапка */
+.shapka {
+  background: linear-gradient(90deg, #6d28d9, #4f46e5);
+  color: #ffffff;
+  text-align: center;
+  padding: 22px;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.35);
+}
+.shapka h1 { margin: 0; font-size: 26px; letter-spacing: 0.5px; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+
+/* Меню */
+.menu {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 10px;
+  text-align: center;
+  margin-top: 12px;
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+}
+.menu a {
+  display: inline-block;
+  color: #cdc7e6;
+  text-decoration: none;
+  margin: 4px 8px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+/* Динамический эффект CSS: изменение ссылки при наведении */
+.menu a:hover { color: #fff; background: linear-gradient(90deg, #6d28d9, #4f46e5); }
+.menu a.active { background: linear-gradient(90deg, #6d28d9, #4f46e5); color: #fff; box-shadow: 0 4px 14px rgba(79,70,229,0.5); }
+
+/* Контент */
+.content {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  margin-top: 12px;
+  padding: 24px;
+  min-height: 460px;
+  backdrop-filter: blur(6px);
+}
+.content h2 { color: #b7aaff; margin-top: 0; font-weight: 700; }
+.content p  { text-align: justify; line-height: 1.5; }
+.content b { color: #cdc7e6; }
+.content ul li { margin: 6px 0; }
+
+/* Часы (динамический эффект через JS) */
+.clock {
+  position: fixed; top: 10px; right: 14px;
+  color: #fff; font-weight: 600; font-size: 13px;
+  background: rgba(109,40,217,0.8); padding: 5px 12px; border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  z-index: 50;
+}
+
+/* ===== Игровое поле ===== */
+.board { text-align: center; margin-top: 12px; }
+.board-row { display: flex; justify-content: center; flex-wrap: wrap; }
+.cell {
+  width: 110px; height: 110px;
+  margin: 5px;
+  background: rgba(0,0,0,0.25);
+  border: 2px solid rgba(183,170,255,0.4);
+  border-radius: 14px;
+  font-size: 68px; line-height: 106px;
+  text-align: center; cursor: pointer;
+  color: #b7aaff; font-weight: 700;
+  user-select: none;
+  transition: all 0.15s;
+}
+.cell:hover:not(.filled) { background: rgba(109,40,217,0.25); border-color: #8b5cf6; transform: scale(1.03); }
+.cell.filled { cursor: default; }
+.cell.comp { color: #f472b6; }
+.status { font-size: 18px; font-weight: 700; color: #e0d9ff; text-align: center; margin: 14px 0 4px; min-height: 24px; }
+.score { font-size: 16px; color: #cdc7e6; text-align: center; margin-bottom: 6px; font-weight: 600; }
+.player-bar { text-align: center; margin: 12px 0; }
+.player-bar input {
+  padding: 7px 10px; font-size: 14px;
+  border: 1px solid rgba(183,170,255,0.4); border-radius: 8px;
+  background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; outline: none;
+}
+.player-bar input:focus { border-color: #8b5cf6; }
+.btn {
+  padding: 8px 18px; font-size: 14px; font-family: inherit; font-weight: 600;
+  background: linear-gradient(90deg, #6d28d9, #4f46e5);
+  color: #fff; border: none; border-radius: 20px;
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.btn.grey { background: rgba(255,255,255,0.15); color: #cdc7e6; box-shadow: none; }
+.btn.grey:hover { background: rgba(255,255,255,0.25); color: #fff; }
+
+/* ===== Таблицы ===== */
+table.stats { width: 100%; border-collapse: collapse; margin-top: 12px; }
+table.stats th, table.stats td { border: 1px solid rgba(183,170,255,0.25); padding: 7px 8px; text-align: center; }
+table.stats th { background: rgba(109,40,217,0.35); color: #e0d9ff; }
+table.stats tr:nth-child(even) td { background: rgba(255,255,255,0.04); }
+
+/* ===== Гостевая книга ===== */
+.guest-form { max-width: 480px; margin: 12px auto 0; }
+.guest-form label { display: block; margin: 8px 0 2px; color: #b7aaff; font-weight: 600; }
+.guest-form input, .guest-form textarea {
+  width: 100%; padding: 7px 10px; font-size: 14px; font-family: inherit;
+  border: 1px solid rgba(183,170,255,0.4); border-radius: 8px;
+  background: rgba(0,0,0,0.3); color: #fff; outline: none;
+}
+.guest-form input:focus, .guest-form textarea:focus { border-color: #8b5cf6; }
+.guest-form .btn { margin-top: 12px; }
+.guest-list { margin-top: 18px; }
+.guest-item {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
+}
+.guest-item .gname { font-weight: 700; color: #b7aaff; }
+.guest-item .gd { font-size: 12px; color: #8b86a3; }
+.guest-item .gmsg { margin-top: 5px; text-align: justify; }
+
+/* Поле ввода только кириллица */
+#gfam { text-transform: capitalize; }
+
+/* Хвостик (след за мышью) */
+#trail { position: fixed; width: 10px; height: 10px; border-radius: 50%;
+  background: radial-gradient(circle, #a78bfa, #6d28d9); opacity: 0.7;
+  pointer-events: none; z-index: 9999;
+  box-shadow: 0 0 12px rgba(139,92,246,0.9); }
+
+.message { text-align: center; font-weight: bold; margin: 8px 0; min-height: 20px; }
+.message.ok { color: #4ade80; }
+.message.err { color: #fb7185; }
+</style>
+</head>
+<body>
+
+<!-- Часы (динамический эффект) -->
+<div class="clock" id="clock"></div>
+<!-- Хвостик за мышью (динамический эффект) -->
+<div id="trail" style="display:none;"></div>
+
+<div class="wrap">
+
+  <div class="shapka">
+    <h1>Крестики-Нолики против компьютера</h1>
+  </div>
+
+  <div class="menu">
+    <a href="#" data-page="home">Главная</a>
+    <a href="#" data-page="game">Играть</a>
+    <a href="#" data-page="stats">Статистика</a>
+    <a href="#" data-page="guest">Гостевая книга</a>
+    <a href="#" data-page="about">О сайте</a>
+  </div>
+
+  <div class="content" id="content"></div>
+
+</div>
+
+<script>
+/* ===== Хранилище данных (вместо БД MySQL - localStorage) ===== */
+var Storage = {
+  getGames: function () {
+    try { return JSON.parse(localStorage.getItem('xk_games')) || []; }
+    catch (e) { return []; }
+  },
+  saveGames: function (games) {
+    localStorage.setItem('xk_games', JSON.stringify(games));
+  },
+  getGuest: function () {
+    try { return JSON.parse(localStorage.getItem('xk_guest')) || []; }
+    catch (e) { return []; }
+  },
+  saveGuest: function (list) {
+    localStorage.setItem('xk_guest', JSON.stringify(list));
+  }
+};
+
+/* ===== Навигация между страницами ===== */
+var allPages = document.querySelectorAll('.menu a');
+function showPage(name) {
+  allPages.forEach(function (a) {
+    a.classList.toggle('active', a.getAttribute('data-page') === name);
+  });
+  if (name === 'home') renderHome();
+  else if (name === 'game') renderGame();
+  else if (name === 'stats') renderStats();
+  else if (name === 'guest') renderGuest();
+  else if (name === 'about') renderAbout();
+}
+allPages.forEach(function (a) {
+  a.addEventListener('click', function (e) {
+    e.preventDefault();
+    showPage(a.getAttribute('data-page'));
+  });
+});
+
+function renderHome() {
+  document.getElementById('content').innerHTML =
+    '<h2>Главная</h2>' +
+    '<p>Добро пожаловать на игровой сайт «Крестики-Нолики»! Здесь вы можете сыграть ' +
+    'в классическую настольную игру против компьютера.' +
+    ' Игра не требует установки дополнительного программного обеспечения и работает прямо в браузере.</p>' +
+    '<p><b>Правила:</b> поле размером 3 на 3 клетки. Вы играете «крестиками», компьютер — «ноликами». ' +
+    'Игроки по очереди ставят свои знаки в свободные клетки. Побеждает тот, кто первым соберёт ' +
+    'три своих знака в ряд: по горизонтали, вертикали или диагонали. Если все клетки заполнены, ' +
+    'а выигрышной комбинации нет — объявляется ничья.</p>' +
+    '<p>Для начала игры выберите пункт меню «Играть». Результаты партий сохраняются и отображаются ' +
+    'в разделе «Статистика». Оставить отзыв или задать вопрос можно в «Гостевой книге».</p>' +
+    '<p style="text-align:center; margin-top:20px;"><button class="btn" onclick="showPage(\'game\')">Начать игру</button></p>';
+}
+
+/* ===== Игра «Крестики-Нолики» ===== */
+var field = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // 0 пусто, 1 крестик игрок, 2 нолик компьютер
+var playerScore = 0, compScore = 0, drawScore = 0;
+var moves = 0, gameOver = false;
+var playerMark = 1, compMark = 2;
+var linesWin = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function renderGame() {
+  document.getElementById('content').innerHTML =
+    '<h2>Игра «Крестики-Нолики»</h2>' +
+    '<div class="player-bar">' +
+    '  Ваше имя: <input type="text" id="playerName" value="Игрок" maxlength="20">' +
+    '  <button class="btn" onclick="newGame()">Новая игра</button>' +
+    '</div>' +
+    '<div class="score" id="scoreEl">Счёт: вы 0 - 0 компьютер (ничьих 0)</div>' +
+    '<div class="status" id="statusEl">Нажмите «Новая игра» для начала партии</div>' +
+    '<div class="board" id="boardEl"></div>' +
+    '<p style="text-align:center; margin:10px 0 0;"><button class="btn grey" onclick="clearScore()">Сбросить счёт</button></p>';
+  syncScore();
+  drawBoard();
+}
+
+function drawBoard() {
+  var b = document.getElementById('boardEl');
+  var html = '';
+  for (var i = 0; i < 9; i++) {
+    html += '<div class="cell" id="cell' + i + '" onclick="playerMove(' + i + ')"></div>';
+    if (i === 2 || i === 5) html += '<div style="flex-basis:100%;height:0"></div>';
+  }
+  b.innerHTML = '<div class="board-row">' + html + '</div>';
+  updateField();
+}
+
+function syncScore() {
+  var s = document.getElementById('scoreEl');
+  if (s) s.textContent = 'Счёт: вы ' + playerScore + ' - ' + compScore + ' компьютер (ничьих ' + drawScore + ')';
+}
+
+function setStatus(t) {
+  var s = document.getElementById('statusEl');
+  if (s) s.textContent = t;
+}
+
+function newGame() {
+  for (var i = 0; i < 9; i++) field[i] = 0;
+  moves = 0; gameOver = false;
+  drawBoard();
+  setStatus('Ваш ход. Нажмите на свободную клетку');
+}
+
+function playerMove(idx) {
+  if (gameOver) return;
+  if (field[idx] !== 0) { setStatus('Эта клетка занята, выберите другую'); return; }
+  field[idx] = playerMark; moves++;
+  applyCell(idx, playerMark);
+  if (checkWin(playerMark)) { endGame(1); return; }
+  if (moves === 9) { endGame(0); return; }
+  setStatus('Ход компьютера');
+  setTimeout(computerMove, 300);
+}
+
+function computerMove() {
+  var idx = bestMove();
+  field[idx] = compMark; moves++;
+  applyCell(idx, compMark);
+  if (checkWin(compMark)) { endGame(2); return; }
+  if (moves === 9) { endGame(0); return; }
+  setStatus('Ваш ход. Нажмите на свободную клетку');
+}
+
+function applyCell(idx, mark) {
+  var el = document.getElementById('cell' + idx);
+  el.textContent = mark === 1 ? '✕' : '○';
+  el.classList.add('filled');
+  if (mark === 2) el.classList.add('comp');
+}
+
+function checkWin(m) {
+  for (var i = 0; i < linesWin.length; i++) {
+    var a = linesWin[i][0], b = linesWin[i][1], c = linesWin[i][2];
+    if (field[a] === m && field[b] === m && field[c] === m) return true;
+  }
+  return false;
+}
+
+/* Алгоритм хода компьютера: выигрыш -> блокировка -> центр -> угол -> любая */
+function bestMove() {
+  var i, j;
+  for (i = 0; i < 9; i++)
+    if (field[i] === 0) {
+      field[i] = compMark;
+      if (checkWin(compMark)) { field[i] = 0; return i; }
+      field[i] = 0;
+    }
+  for (i = 0; i < 9; i++)
+    if (field[i] === 0) {
+      field[i] = playerMark;
+      if (checkWin(playerMark)) { field[i] = 0; return i; }
+      field[i] = 0;
+    }
+  if (field[4] === 0) return 4;
+  var corners = [0, 2, 6, 8];
+  for (j = 0; j < 4; j++) if (field[corners[j]] === 0) return corners[j];
+  for (i = 0; i < 9; i++) if (field[i] === 0) return i;
+  return 0;
+}
+
+function endGame(winner) {
+  gameOver = true;
+  var name = document.getElementById('playerName').value || 'Игрок';
+  var res;
+  if (winner === 1) { playerScore++; res = 'Победа'; setStatus('✕ Победа! Поздравляем!'); }
+  else if (winner === 2) { compScore++; res = 'Поражение'; setStatus('○ Победил компьютер'); }
+  else { drawScore++; res = 'Ничья'; setStatus('Ничья'); }
+  syncScore();
+  saveGame(name, res, moves);
+}
+
+function saveGame(name, result, m) {
+  var games = Storage.getGames();
+  var now = new Date();
+  var date = pad(now.getDate()) + '.' + pad(now.getMonth() + 1) + '.' + now.getFullYear() +
+             ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+  games.unshift({ name: name, result: result, moves: m, date: date });
+  if (games.length > 50) games.length = 50;
+  Storage.saveGames(games);
+}
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function clearScore() { playerScore = 0; compScore = 0; drawScore = 0; syncScore(); }
+
+/* ===== Статистика ===== */
+function renderStats() {
+  var games = Storage.getGames();
+  var html = '<h2>Статистика игр</h2>';
+  if (games.length === 0) {
+    html += '<p>Пока сыграно ни одной партии. Перейдите в раздел «Играть».</p>';
+  } else {
+    html += '<table class="stats"><tr><th>Имя игрока</th><th>Результат</th><th>Ходов</th><th>Дата</th></tr>';
+    games.forEach(function (g) {
+      html += '<tr><td>' + esc(g.name) + '</td><td>' + esc(g.result) + '</td><td>' + g.moves +
+              '</td><td>' + esc(g.date) + '</td></tr>';
+    });
+    html += '</table>';
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+/* ===== Гостевая книга ===== */
+function renderGuest() {
+  var list = Storage.getGuest();
+  var items = '';
+  list.forEach(function (g) {
+    items += '<div class="guest-item"><span class="gname">' + esc(g.fam) +
+             '</span> <span class="gd">' + esc(g.date) + '</span>' +
+             '<div class="gmsg">' + esc(g.msg) + '</div></div>';
+  });
+  if (!items) items = '<p style="color:#7a8c80">Сообщений пока нет. Станьте первым!</p>';
+
+  document.getElementById('content').innerHTML =
+    '<h2>Гостевая книга</h2>' +
+    '<p>Оставьте отзыв о сайте или задайте вопрос. Поля «Фамилия» и «Сообщение» обязательны, ' +
+    'адрес электронной почты проверяется на корректность формата.</p>' +
+    '<form class="guest-form" name="gf" onsubmit="return submitGuest();">' +
+    '  <div class="message" id="gMsg"></div>' +
+    '  <label for="gfam">Фамилия</label>' +
+    '  <input type="text" id="gfam" name="fam" maxlength="40" placeholder="Ваша фамилия">' +
+    '  <label for="gmail">Электронный адрес</label>' +
+    '  <input type="text" id="gmail" name="email" maxlength="40" placeholder="you@mail.ru">' +
+    '  <label for="gtext">Сообщение</label>' +
+    '  <textarea id="gtext" name="msg" rows="4" placeholder="Текст сообщения"></textarea>' +
+    '  <button class="btn" type="submit">Отправить</button>' +
+    '</form>' +
+    '<div class="guest-list">' + items + '</div>';
+
+  // Поле «Фамилия» принимает только кириллицу
+  document.getElementById('gfam').addEventListener('input', function () {
+    var v = this.value;
+    var cleaned = v.replace(/[^а-яА-ЯёЁ\s\-]/g, '');
+    if (cleaned !== v) this.value = cleaned;
+  });
+}
+
+function submitGuest() {
+  var fam = document.getElementById('gfam').value.trim();
+  var email = document.getElementById('gmail').value.trim();
+  var msg = document.getElementById('gtext').value.trim();
+  var mBox = document.getElementById('gMsg');
+  mBox.className = 'message err';
+  if (fam === '' || msg === '') {
+    mBox.textContent = 'Заполните все поля'; return false;
+  }
+  var re = /^[\w.\-]+@[\w.\-]+\.[a-zA-Z]{2,4}$/;
+  if (!re.test(email)) {
+    mBox.textContent = 'Неверный формат электронного адреса'; return false;
+  }
+  var now = new Date();
+  var date = pad(now.getDate()) + '.' + pad(now.getMonth() + 1) + '.' + now.getFullYear();
+  var list = Storage.getGuest();
+  list.unshift({ fam: fam, email: email, msg: msg, date: date });
+  Storage.saveGuest(list);
+  renderGuest();
+  return false;
+}
+
+/* ===== О сайте ===== */
+function renderAbout() {
+  document.getElementById('content').innerHTML =
+    '<h2>О сайте</h2>' +
+    '<p>Игровой Web-сайт «Крестики-Нолики против компьютера» разработан в рамках курсовой работы ' +
+    'по дисциплине «WEB-технологии».</p>' +
+    '<p><b>Технологии, использованные при разработке:</b></p>' +
+    '<ul>' +
+    '  <li>HTML — структура Web-страниц;</li>' +
+    '  <li>CSS — единый стиль оформления, динамические эффекты (изменение ссылок при наведении);</li>' +
+    '  <li>JavaScript — игровая логика, динамические эффекты (часы, «хвостик» за мышью), проверка форм;</li>' +
+    '  <li>Хранилище браузера (localStorage) — сохранение статистики и записей гостевой книги.</li>' +
+    '</ul>' +
+    '<p>Данная версия сайта состоит из одного файла и запускается без Web-сервера. ' +
+    'В серверной версии (PHP + MySQL) статистика и гостевая книга хранятся в базе данных, ' +
+    'а обработка форм выполняется на стороне сервера.</p>' +
+    '<p>Сайт разработан студентом ВГТУ. Спасибо за посещение!</p>';
+}
+
+/* ===== Вспомогательные ===== */
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+}
+
+/* ===== Текущее время (динамический эффект) ===== */
+function tickClock() {
+  var el = document.getElementById('clock');
+  var now = new Date();
+  el.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+}
+setInterval(tickClock, 1000);
+
+/* ===== «Хвостик» — след за мышью (динамический эффект) ===== */
+(function () {
+  var trail = document.getElementById('trail');
+  var timer = null;
+  document.addEventListener('mousemove', function (e) {
+    trail.style.display = 'block';
+    trail.style.left = (e.clientX - 4) + 'px';
+    trail.style.top = (e.clientY - 4) + 'px';
+    clearTimeout(timer);
+    timer = setTimeout(function () { trail.style.display = 'none'; }, 1500);
+  });
+})();
+
+/* ===== Старт: показываем главную и запускаем часы ===== */
+tickClock();
+showPage('home');
+</script>
+</body>
+</html>

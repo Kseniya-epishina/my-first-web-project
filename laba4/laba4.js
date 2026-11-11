@@ -1,5 +1,5 @@
 let  userName = prompt('Как вас зовут?');
-alert("Привет, " + userName + "!");
+alert("Привет, " + userName + "");
 const myButton = document .getElementById( "myBtn" );
 myButton.addEventListener( "click" , function () {   alert( "Кнопка нажата!" ); });
 
